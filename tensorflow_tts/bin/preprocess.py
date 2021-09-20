@@ -33,6 +33,7 @@ from tqdm import tqdm
 from tensorflow_tts.processor import LJSpeechProcessor
 from tensorflow_tts.processor import BakerProcessor
 from tensorflow_tts.processor import KSSProcessor
+from tensorflow_tts.processor import JSUTProcessor
 from tensorflow_tts.processor import LibriTTSProcessor
 from tensorflow_tts.processor import ThorstenProcessor
 from tensorflow_tts.processor import SynpaflexProcessor
@@ -40,6 +41,7 @@ from tensorflow_tts.processor import SynpaflexProcessor
 from tensorflow_tts.processor.ljspeech import LJSPEECH_SYMBOLS
 from tensorflow_tts.processor.baker import BAKER_SYMBOLS
 from tensorflow_tts.processor.kss import KSS_SYMBOLS
+from tensorflow_tts.processor.jsut import JSUT_SYMBOLS
 from tensorflow_tts.processor.libritts import LIBRITTS_SYMBOLS
 from tensorflow_tts.processor.thorsten import THORSTEN_SYMBOLS
 from tensorflow_tts.processor.synpaflex import SYNPAFLEX_SYMBOLS
@@ -73,7 +75,7 @@ def parse_and_config():
         "--dataset",
         type=str,
         default="ljspeech",
-        choices=["ljspeech", "kss", "libritts", "baker", "thorsten", "synpaflex"],
+        choices=["ljspeech", "kss", "jsut", "libritts", "baker", "thorsten", "synpaflex"],
         help="Dataset to preprocess.",
     )
     parser.add_argument(
@@ -351,6 +353,7 @@ def preprocess():
     dataset_processor = {
         "ljspeech": LJSpeechProcessor,
         "kss": KSSProcessor,
+        "jsut": JSUTProcessor,
         "libritts": LibriTTSProcessor,
         "baker": BakerProcessor,
         "thorsten": ThorstenProcessor,
@@ -360,6 +363,7 @@ def preprocess():
     dataset_symbol = {
         "ljspeech": LJSPEECH_SYMBOLS,
         "kss": KSS_SYMBOLS,
+        "jsut": JSUT_SYMBOLS,
         "libritts": LIBRITTS_SYMBOLS,
         "baker": BAKER_SYMBOLS,
         "thorsten": THORSTEN_SYMBOLS,
@@ -369,6 +373,7 @@ def preprocess():
     dataset_cleaner = {
         "ljspeech": "english_cleaners",
         "kss": "korean_cleaners",
+        "jsut": None,
         "libritts": None,
         "baker": None,
         "thorsten": "german_cleaners",

@@ -60,10 +60,10 @@ class BaseProcessor(abc.ABC):
         if self.symbols.__len__() < 1:
             raise DataProcessorError("Symbols list is empty but mapper isn't loaded")
 
+        self.create_symbols()
         self.create_items()
         self.create_speaker_map()
         self.reverse_speaker = {v: k for k, v in self.speakers_map.items()}
-        self.create_symbols()
         if self.saved_mapper_path is not None:
             self._save_mapper(saved_path=self.saved_mapper_path)
 

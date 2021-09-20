@@ -44,6 +44,9 @@ requirements = {
         "click",
         "g2p_en",
         "dataclasses",
+        # for jsut
+        'mecab-python3',
+        'jaconv',
     ],
     "setup": ["numpy", "pytest-runner",],
     "test": [
