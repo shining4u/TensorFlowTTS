@@ -170,19 +170,8 @@ class JSUTProcessor(BaseProcessor):
         return text
     #
 
-    def _clean_text(self, text, cleaner_names):
-        for name in cleaner_names:
-            cleaner = getattr(cleaners, name)
-            if not cleaner:
-                raise Exception("Unknown cleaner: %s" % name)
-            text = cleaner(text)
-        return text
-
     def _symbols_to_sequence(self, symbols):
         return [self.symbol_to_id[s] for s in symbols if self._should_keep_symbol(s)]
-
-    def _arpabet_to_sequence(self, text):
-        return self._symbols_to_sequence(["@" + s for s in text.split()])
 
     def _should_keep_symbol(self, s):
         return s in self.symbol_to_id

@@ -22,6 +22,7 @@ from collections import OrderedDict
 from tensorflow_tts.processor import (
     LJSpeechProcessor,
     KSSProcessor,
+    JSUTProcessor,
     BakerProcessor,
     LibriTTSProcessor,
     ThorstenProcessor,
@@ -36,6 +37,7 @@ CONFIG_MAPPING = OrderedDict(
     [
         ("LJSpeechProcessor", LJSpeechProcessor),
         ("KSSProcessor", KSSProcessor),
+        ("JSUTProcessor", JSUTProcessor),
         ("BakerProcessor", BakerProcessor),
         ("LibriTTSProcessor", LibriTTSProcessor),
         ("ThorstenProcessor", ThorstenProcessor),
