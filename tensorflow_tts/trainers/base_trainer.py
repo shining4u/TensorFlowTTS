@@ -95,6 +95,7 @@ class BasedTrainer(metaclass=abc.ABCMeta):
         """Create checkpoint management."""
         pass
 
+    @tf.function
     def run(self):
         """Run training."""
         self.tqdm = tqdm(
@@ -121,7 +122,7 @@ class BasedTrainer(metaclass=abc.ABCMeta):
 
     def _train_epoch(self):
         """Train model one epoch."""
-        for train_steps_per_epoch, batch in enumerate(self.train_data_loader, 1):
+        for batch in self.train_data_loader:
             # one step training
             self._train_step(batch)
 
@@ -130,13 +131,9 @@ class BasedTrainer(metaclass=abc.ABCMeta):
             self._check_eval_interval()
             self._check_save_interval()
 
-            # check wheter training is finished
-            if self.finish_train:
-                return
 
         # update
         self.epochs += 1
-        self.train_steps_per_epoch = train_steps_per_epoch
         logging.info(
             f"(Steps: {self.steps}) Finished {self.epochs} epoch training "
             f"({self.train_steps_per_epoch} steps per epoch)."
@@ -653,10 +650,6 @@ class GanBasedTrainer(BasedTrainer):
     def _check_log_interval(self):
         """Log to tensorboard."""
         if self.steps % self.config["log_interval_steps"] == 0:
-            for metric_name in self.list_metrics_name:
-                logging.info(
-                    f"(Step: {self.steps}) train_{metric_name} = {self.train_metrics[metric_name].result():.4f}."
-                )
             self._write_to_tensorboard(self.train_metrics, stage="train")
 
             # reset
@@ -883,31 +876,17 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
         dict_metrics_losses = {}
         return per_example_losses, dict_metrics_losses
 
+    @tf.function
     def _eval_epoch(self):
         """Evaluate model one epoch."""
-        logging.info(f"(Steps: {self.steps}) Start evaluation.")
 
         # calculate loss for each batch
-        for eval_steps_per_epoch, batch in enumerate(
-            tqdm(self.eval_data_loader, desc="[eval]"), 1
-        ):
+        for batch in self.eval_data_loader:
             # eval one step
             self.one_step_evaluate(batch)
 
-            if eval_steps_per_epoch <= self.config["num_save_intermediate_results"]:
-                # save intermedia
-                self.generate_and_save_intermediate_result(batch)
 
-        logging.info(
-            f"(Steps: {self.steps}) Finished evaluation "
-            f"({eval_steps_per_epoch} steps per epoch)."
-        )
 
-        # average loss
-        for key in self.eval_metrics.keys():
-            logging.info(
-                f"(Steps: {self.steps}) eval_{key} = {self.eval_metrics[key].result():.4f}."
-            )
 
         # record
         self._write_to_tensorboard(self.eval_metrics, stage="eval")
@@ -944,22 +923,14 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
         os.makedirs(saved_path, exist_ok=True)
 
         self.saved_path = saved_path
-        self.ckpt = tf.train.Checkpoint(
-            steps=tf.Variable(1), epochs=tf.Variable(1), optimizer=self.get_optimizer()
-        )
-        self.ckp_manager = tf.train.CheckpointManager(
-            self.ckpt, saved_path, max_to_keep=max_to_keep
-        )
+        self.ckp_manager = tf.train.Checkpoint(optimizer=self._optimizer, model=self._model)
+        self.save_ctr = 0
 
     def save_checkpoint(self):
         """Save checkpoint."""
-        self.ckpt.steps.assign(self.steps)
-        self.ckpt.epochs.assign(self.epochs)
-        self.ckp_manager.save(checkpoint_number=self.steps)
-        utils.save_weights(
-            self._model,
-            self.saved_path + "model-{}.h5".format(self.steps)
-        )
+        save_p = self.saved_path + "check-{}".format(self.save_ctr)
+        self.ckp_manager.write(file_prefix=save_p)
+        self.save_ctr += 1
 
     def load_checkpoint(self, pretrained_path):
         """Load checkpoint."""
@@ -984,10 +955,6 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
     def _check_log_interval(self):
         """Log to tensorboard."""
         if self.steps % self.config["log_interval_steps"] == 0:
-            for metric_name in self.list_metrics_name:
-                logging.info(
-                    f"(Step: {self.steps}) train_{metric_name} = {self.train_metrics[metric_name].result():.4f}."
-                )
             self._write_to_tensorboard(self.train_metrics, stage="train")
 
             # reset
