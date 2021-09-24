@@ -849,7 +849,7 @@ class TFTacotron2(BaseModel):
             _,
         ) = dynamic_decode(
             self.decoder,
-            maximum_iterations=maximum_iterations,
+            maximum_iterations=self.maximum_iterations,     # TODO: not using params?
             enable_tflite_convertible=self.enable_tflite_convertible,
             training=training,
         )
