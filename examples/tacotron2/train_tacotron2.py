@@ -241,7 +241,7 @@ class Tacotron2Trainer(Seq2SeqBasedTrainer):
             utt_ids = utt_ids.numpy()
 
         # check directory
-        dirname = os.path.join(self.config["outdir"], f"predictions/{self.steps}steps")
+        dirname = os.path.join(self.config["evaldir"], f"predictions/{self.steps}steps")
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
@@ -410,6 +410,7 @@ def main():
         config = yaml.load(f, Loader=yaml.Loader)
     config.update(vars(args))
     config["version"] = tensorflow_tts.__version__
+    config["evaldir"] = "./" + args.outdir.split("/")[-1] + "_eval"  # too lazy to adapt evaluation plot saving to GCS buckets, so just save into local fs.
 
     # get dataset
     if config["remove_short_samples"]:
