@@ -165,7 +165,7 @@ class CharactorMelDataset(AbstractDataset):
         # TODO:
 
         items = {
-            "utt_ids": parsed_ex["utt_ids"],
+            "utt_ids": tf.cast(parsed_ex["utt_ids"], tf.int32),
             "input_ids": tf.cast(input_ids, tf.int64),
             "input_lengths": parsed_ex["input_lengths"],
             "speaker_ids": tf.cast(parsed_ex["speaker_ids"], tf.int32),
@@ -202,7 +202,7 @@ class CharactorMelDataset(AbstractDataset):
         output_types = self.get_output_dtypes()
         datasets = tf.data.TFRecordDataset(self.tfrecord_files)
         self.feature_description = {
-            "utt_ids": tf.io.FixedLenFeature([], tf.string, default_value=""),
+            "utt_ids": tf.io.FixedLenFeature([], tf.int64),
             "input_ids": tf.io.FixedLenFeature([], tf.string, default_value=""), # TODO: tf.string?
             "input_lengths": tf.io.FixedLenFeature([], tf.int64), # TODO: tf.int32?
             "mel_gts": tf.io.FixedLenFeature([], tf.string, default_value=""),
@@ -241,7 +241,7 @@ class CharactorMelDataset(AbstractDataset):
 
         # define padding value.
         padding_values = {
-            "utt_ids": " ",
+            "utt_ids": 0,
             "input_ids": tf.cast(self.char_pad_value, tf.int64),
             "input_lengths": tf.cast(0, tf.int64),
             "speaker_ids": 0,

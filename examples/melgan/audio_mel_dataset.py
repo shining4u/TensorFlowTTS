@@ -105,7 +105,7 @@ class AudioMelDataset(AbstractDataset):
         audio = tf.reshape(audio, [parsed_ex["audio_len"]])
 
         items = {
-            "utt_ids": parsed_ex["utt_ids"],
+            "utt_ids": tf.cast(parsed_ex["utt_ids"], tf.int32),
             "mels": mel,
             "audios": audio,
             "mel_lengths": tf.cast(parsed_ex["mel_lengths"], tf.int32),
@@ -125,7 +125,7 @@ class AudioMelDataset(AbstractDataset):
         output_types = self.get_output_dtypes()
         datasets = tf.data.TFRecordDataset(self.tfrecord_files)
         self.feature_description = {
-            "utt_ids": tf.io.FixedLenFeature([], tf.string, default_value=""),
+            "utt_ids": tf.io.FixedLenFeature([], tf.int64),
             "input_ids": tf.io.FixedLenFeature([], tf.string, default_value=""),
             "input_lengths": tf.io.FixedLenFeature([], tf.int64),
             "mel_gts": tf.io.FixedLenFeature([], tf.string, default_value=""),
@@ -171,7 +171,7 @@ class AudioMelDataset(AbstractDataset):
 
         # define padded values
         padding_values = {
-            "utt_ids": "",
+            "utt_ids": 0,
             "audios": 0.0,
             "mels": 0.0,
             "mel_lengths": 0,
