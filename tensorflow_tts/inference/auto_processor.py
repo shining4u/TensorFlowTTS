@@ -26,6 +26,7 @@ from tensorflow_tts.processor import (
     BakerProcessor,
     LibriTTSProcessor,
     ThorstenProcessor,
+    LJSpeechUltimateProcessor,
     SynpaflexProcessor,
 )
 
@@ -41,6 +42,7 @@ CONFIG_MAPPING = OrderedDict(
         ("BakerProcessor", BakerProcessor),
         ("LibriTTSProcessor", LibriTTSProcessor),
         ("ThorstenProcessor", ThorstenProcessor),
+        ("LJSpeechUltimateProcessor", LJSpeechUltimateProcessor),
         ("SynpaflexProcessor", SynpaflexProcessor),
     ]
 )

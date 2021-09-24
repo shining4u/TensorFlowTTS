@@ -36,14 +36,15 @@ from tensorflow_tts.processor import KSSProcessor
 from tensorflow_tts.processor import JSUTProcessor
 from tensorflow_tts.processor import LibriTTSProcessor
 from tensorflow_tts.processor import ThorstenProcessor
+from tensorflow_tts.processor import LJSpeechUltimateProcessor
 from tensorflow_tts.processor import SynpaflexProcessor
-
 from tensorflow_tts.processor.ljspeech import LJSPEECH_SYMBOLS
 from tensorflow_tts.processor.baker import BAKER_SYMBOLS
 from tensorflow_tts.processor.kss import KSS_SYMBOLS
 from tensorflow_tts.processor.jsut import JSUT_SYMBOLS
 from tensorflow_tts.processor.libritts import LIBRITTS_SYMBOLS
 from tensorflow_tts.processor.thorsten import THORSTEN_SYMBOLS
+from tensorflow_tts.processor.ljspeechu import LJSPEECH_U_SYMBOLS
 from tensorflow_tts.processor.synpaflex import SYNPAFLEX_SYMBOLS
 
 from tensorflow_tts.utils import remove_outlier
@@ -75,7 +76,7 @@ def parse_and_config():
         "--dataset",
         type=str,
         default="ljspeech",
-        choices=["ljspeech", "kss", "jsut", "libritts", "baker", "thorsten", "synpaflex"],
+        choices=["ljspeech", "kss", "jsut", "libritts", "baker", "thorsten", "ljspeechu", "synpaflex"],
         help="Dataset to preprocess.",
     )
     parser.add_argument(
@@ -357,6 +358,7 @@ def preprocess():
         "libritts": LibriTTSProcessor,
         "baker": BakerProcessor,
         "thorsten": ThorstenProcessor,
+        "ljspeechu" : LJSpeechUltimateProcessor,
         "synpaflex": SynpaflexProcessor,
     }
 
@@ -367,6 +369,7 @@ def preprocess():
         "libritts": LIBRITTS_SYMBOLS,
         "baker": BAKER_SYMBOLS,
         "thorsten": THORSTEN_SYMBOLS,
+        "ljspeechu": LJSPEECH_U_SYMBOLS,
         "synpaflex": SYNPAFLEX_SYMBOLS,
     }
 
@@ -377,6 +380,7 @@ def preprocess():
         "libritts": None,
         "baker": None,
         "thorsten": "german_cleaners",
+        "ljspeechu": "english_cleaners",
         "synpaflex": "basic_cleaners",
     }
 
