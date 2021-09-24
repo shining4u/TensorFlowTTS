@@ -44,6 +44,8 @@ requirements = {
         "click",
         "g2p_en",
         "dataclasses",
+        #
+        "tensorflow_datasets",
         # for jsut
         'mecab-python3',
         'jaconv',

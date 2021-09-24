@@ -347,10 +347,24 @@ def main():
         type=int,
         help="Use forced alignment guided attention loss or regular",
     )
+    # TODO: change to boolean
+    parser.add_argument(
+        "--tpu",
+        default="",
+        type=str,
+        nargs="?",
+        help="tpu to use",
+    )
     args = parser.parse_args()
 
     # return strategy
-    STRATEGY = return_strategy()
+    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
+    tf.config.experimental_connect_to_cluster(resolver)
+    tf.tpu.experimental.initialize_tpu_system(resolver)
+
+    STRATEGY = tf.distribute.TPUStrategy(resolver)
+    print('Running on TPU ', resolver.cluster_spec().as_dict()['worker'])
+    print("Number of accelerators: ", STRATEGY.num_replicas_in_sync)
 
     # set mixed precision config
     if args.mixed_precision == 1:
@@ -412,6 +426,8 @@ def main():
     else:
         raise ValueError("Only npy are supported.")
 
+    logging.info("Creating datasets...")
+
     train_dataset = CharactorMelDataset(
         dataset=config["tacotron2_params"]["dataset"],
         root_dir=args.train_dir,
@@ -458,6 +474,7 @@ def main():
         allow_cache=config["allow_cache"],
         batch_size=config["batch_size"] * STRATEGY.num_replicas_in_sync,
     )
+    logging.info("Datasets created")
 
     # define trainer
     trainer = Tacotron2Trainer(

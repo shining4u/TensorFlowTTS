@@ -25,6 +25,26 @@ import tensorflow as tf
 from tensorflow_tts.datasets.abstract_dataset import AbstractDataset
 from tensorflow_tts.utils import find_files
 
+import tensorflow_datasets as tfds
+from tensorflow.python.lib.io import file_io
+from io import BytesIO
+
+
+def getgcsfile(src):
+    f = BytesIO(file_io.read_file_to_string(src, binary_mode=True))
+    return f
+
+
+def getgcsnp(npf):
+    return np.load(getgcsfile(npf))
+
+
+def getflist(root_d, subfolder_name, query):
+    the_files = list(tfds.as_numpy(tf.data.Dataset.list_files(os.path.join(root_d, subfolder_name, query))))
+    the_files = [x.decode('utf8') for x in the_files]
+    the_files = sorted(the_files)
+    return the_files
+
 
 class CharactorMelDataset(AbstractDataset):
     """Tensorflow Charactor Mel dataset."""
@@ -67,11 +87,10 @@ class CharactorMelDataset(AbstractDataset):
 
         """
         # find all of charactor and mel files.
-        charactor_files = sorted(find_files(root_dir, charactor_query))
-        mel_files = sorted(find_files(root_dir, mel_query))
-
-        mel_lengths = [mel_load_fn(f).shape[0] for f in mel_files]
-        char_lengths = [charactor_load_fn(f).shape[0] for f in charactor_files]
+        charactor_files = getflist(root_dir, "ids", charactor_query)
+        mel_files = getflist(root_dir, "norm-feats", mel_query)
+        mel_lengths = [getgcsnp(f).shape[0] for f in mel_files]
+        char_lengths = [getgcsnp(f).shape[0] for f in charactor_files]
 
         # assert the number of files
         assert len(mel_files) != 0, f"Not found any mels files in ${root_dir}."
@@ -142,8 +161,8 @@ class CharactorMelDataset(AbstractDataset):
 
     @tf.function
     def _load_data(self, items):
-        mel = tf.numpy_function(np.load, [items["mel_files"]], tf.float32)
-        charactor = tf.numpy_function(np.load, [items["charactor_files"]], tf.int32)
+        mel = tf.numpy_function(getgcsnp, [items["mel_files"]], tf.float32)
+        charactor = tf.numpy_function(getgcsnp, [items["charactor_files"]], tf.int32)
         g_att = (
             tf.numpy_function(np.load, [items["align_files"]], tf.float32)
             if len(self.align_files) > 1
