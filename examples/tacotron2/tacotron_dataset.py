@@ -210,6 +210,8 @@ class CharactorMelDataset(AbstractDataset):
             "real_mel_lengths": tf.io.FixedLenFeature([], tf.int64),
             "speaker_ids": tf.io.FixedLenFeature([], tf.int64),
             "num_mels": tf.io.FixedLenFeature([], tf.int64),
+            "audios": tf.io.FixedLenFeature([], tf.string),
+            "audio_len": tf.io.FixedLenFeature([], tf.int64),
         }
 
         # load data

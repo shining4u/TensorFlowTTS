@@ -23,6 +23,26 @@ import tensorflow as tf
 from tensorflow_tts.datasets.abstract_dataset import AbstractDataset
 from tensorflow_tts.utils import find_files
 
+import tensorflow_datasets as tfds
+from tensorflow.python.lib.io import file_io
+from io import BytesIO
+
+
+def getgcsfile(src):
+    f = BytesIO(file_io.read_file_to_string(src, binary_mode=True))
+    return f
+
+
+def getgcsnp(npf):
+    return np.load(getgcsfile(npf))
+
+
+def getflist(root_d, subfolder_name, query):
+    the_files = list(tfds.as_numpy(tf.data.Dataset.list_files(os.path.join(root_d, subfolder_name, query))))
+    the_files = [x.decode('utf8') for x in the_files]
+    the_files = sorted(the_files)
+    return the_files
+
 
 class AudioMelDataset(AbstractDataset):
     """Tensorflow Audio Mel dataset."""
@@ -49,23 +69,13 @@ class AudioMelDataset(AbstractDataset):
             return_utt_id (bool): Whether to return the utterance id with arrays.
         """
         # find all of audio and mel files.
-        audio_files = sorted(find_files(root_dir, audio_query))
-        mel_files = sorted(find_files(root_dir, mel_query))
-
-        # assert the number of files
-        assert len(audio_files) != 0, f"Not found any audio files in ${root_dir}."
-        assert len(audio_files) == len(
-            mel_files
-        ), f"Number of audio and mel files are different ({len(audio_files)} vs {len(mel_files)})."
-
-        if ".npy" in audio_query:
-            suffix = audio_query[1:]
-            utt_ids = [os.path.basename(f).replace(suffix, "") for f in audio_files]
+        self.tfrecord_files = getflist(root_dir, "tfrecords", "*.tfrecords")
+        assert len(self.tfrecord_files) != 0, f"Not found any tfrecord files in ${root_dir}."
 
         # set global params
-        self.utt_ids = utt_ids
-        self.audio_files = audio_files
-        self.mel_files = mel_files
+        maxlens_path = os.path.join(root_dir, "maxlens.npy")
+        max_lens = getgcsnp(maxlens_path)
+        self.len_dts = max_lens[2]
         self.audio_load_fn = audio_load_fn
         self.mel_load_fn = mel_load_fn
         self.audio_length_threshold = audio_length_threshold
@@ -87,19 +97,20 @@ class AudioMelDataset(AbstractDataset):
 
             yield items
 
-    @tf.function
-    def _load_data(self, items):
-        audio = tf.numpy_function(np.load, [items["audio_files"]], tf.float32)
-        mel = tf.numpy_function(np.load, [items["mel_files"]], tf.float32)
+    def _parse_tfrecord(self, example_proto):
+        parsed_ex = tf.io.parse_single_example(example_proto, self.feature_description)
+        mel = tf.io.parse_tensor(parsed_ex["mel_gts"], tf.float32)
+        mel = tf.reshape(mel, [parsed_ex["real_mel_lengths"], parsed_ex["num_mels"]])
+        audio = tf.io.parse_tensor(parsed_ex["audios"], tf.float32)
+        audio = tf.reshape(audio, [parsed_ex["audio_len"]])
 
         items = {
-            "utt_ids": items["utt_ids"],
-            "audios": audio,
+            "utt_ids": parsed_ex["utt_ids"],
             "mels": mel,
-            "mel_lengths": len(mel),
-            "audio_lengths": len(audio),
+            "audios": audio,
+            "mel_lengths": tf.cast(parsed_ex["mel_lengths"], tf.int32),
+            "audio_lengths": parsed_ex["audio_len"],
         }
-
         return items
 
     def create(
@@ -112,16 +123,20 @@ class AudioMelDataset(AbstractDataset):
     ):
         """Create tf.dataset function."""
         output_types = self.get_output_dtypes()
-        datasets = tf.data.Dataset.from_generator(
-            self.generator, output_types=output_types, args=(self.get_args())
-        )
-        options = tf.data.Options()
-        options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
-        datasets = datasets.with_options(options)
-        # load dataset
-        datasets = datasets.map(
-            lambda items: self._load_data(items), tf.data.experimental.AUTOTUNE
-        )
+        datasets = tf.data.TFRecordDataset(self.tfrecord_files)
+        self.feature_description = {
+            "utt_ids": tf.io.FixedLenFeature([], tf.string, default_value=""),
+            "input_ids": tf.io.FixedLenFeature([], tf.string, default_value=""),
+            "input_lengths": tf.io.FixedLenFeature([], tf.int64),
+            "mel_gts": tf.io.FixedLenFeature([], tf.string, default_value=""),
+            "mel_lengths": tf.io.FixedLenFeature([], tf.int64),
+            "real_mel_lengths": tf.io.FixedLenFeature([], tf.int64),
+            "speaker_ids": tf.io.FixedLenFeature([], tf.int64),
+            "num_mels": tf.io.FixedLenFeature([], tf.int64),
+            "audios": tf.io.FixedLenFeature([], tf.string),
+            "audio_len": tf.io.FixedLenFeature([], tf.int64),
+        }
+        datasets = datasets.map(self._parse_tfrecord, tf.data.experimental.AUTOTUNE)
 
         datasets = datasets.filter(
             lambda x: x["mel_lengths"] > self.mel_length_threshold
@@ -181,7 +196,7 @@ class AudioMelDataset(AbstractDataset):
         return output_types
 
     def get_len_dataset(self):
-        return len(self.utt_ids)
+        return self.len_dts
 
     def __name__(self):
         return "AudioMelDataset"

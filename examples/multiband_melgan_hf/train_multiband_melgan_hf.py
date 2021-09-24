@@ -228,7 +228,7 @@ class MultiBandMelganTrainer(MelganTrainer):
         y_batch_ = self.pqmf.synthesis(y_mb_batch_).numpy()  # [B, T, 1]
 
         # check directory
-        dirname = os.path.join(self.config["outdir"], f"predictions/{self.steps}steps")
+        dirname = os.path.join(self.config["evaldir"], f"predictions/{self.steps}steps")
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
@@ -328,12 +328,25 @@ def main():
         default="",
         type=str,
         nargs="?",
-        help="path of .h5 mb-melgan generator and discriminator to load weights from. must be comma delineated, like ptgen.h5,ptdisc.h5",
+        help="path of .h5 mb-melgan generator to load weights from",
+    )
+    parser.add_argument(
+        "--tpu",
+        default="",
+        type=str,
+        nargs="?",
+        help="TPU to use",
     )
     args = parser.parse_args()
 
     # return strategy
-    STRATEGY = return_strategy()
+    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
+    tf.config.experimental_connect_to_cluster(resolver)
+    tf.tpu.experimental.initialize_tpu_system(resolver)
+
+    STRATEGY = tf.distribute.TPUStrategy(resolver)
+    print('Running on TPU ', resolver.cluster_spec().as_dict()['worker'])
+    print("Number of accelerators: ", STRATEGY.num_replicas_in_sync)
 
     # set mixed precision config
     if args.generator_mixed_precision == 1 or args.discriminator_mixed_precision == 1:
@@ -381,6 +394,8 @@ def main():
         config = yaml.load(f, Loader=yaml.Loader)
     config.update(vars(args))
     config["version"] = tensorflow_tts.__version__
+    config["evaldir"] = "./" + args.outdir.split("/")[-1] + "_eval" # too lazy to adapt evaluation plot saving to GCS buckets, so just save into local fs.
+
     with open(os.path.join(args.outdir, "config.yml"), "w") as f:
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
