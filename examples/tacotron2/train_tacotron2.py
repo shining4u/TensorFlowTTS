@@ -19,6 +19,8 @@ physical_devices = tf.config.list_physical_devices("GPU")
 for i in range(len(physical_devices)):
     tf.config.experimental.set_memory_growth(physical_devices[i], True)
 
+tf.config.set_soft_device_placement(True)
+
 import sys
 
 sys.path.append(".")
@@ -468,7 +470,7 @@ def main():
         mel_load_fn=mel_load_fn,
         mel_length_threshold=mel_length_threshold,
         reduction_factor=config["tacotron2_params"]["reduction_factor"],
-        use_fixed_shapes=False,  # don't need apply fixed shape for evaluation.
+        use_fixed_shapes=True,
         align_query=align_query,
     ).create(
         is_shuffle=config["is_shuffle"],
