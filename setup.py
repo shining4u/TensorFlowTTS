@@ -61,6 +61,7 @@ entry_points = {
         "tensorflow-tts-preprocess=tensorflow_tts.bin.preprocess:preprocess",
         "tensorflow-tts-compute-statistics=tensorflow_tts.bin.preprocess:compute_statistics",
         "tensorflow-tts-normalize=tensorflow_tts.bin.preprocess:normalize",
+        "tensorflow-tts-convert=tensorflow_tts.bin.converter:convert",
     ]
 }
 
