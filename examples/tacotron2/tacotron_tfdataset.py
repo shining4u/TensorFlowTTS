@@ -122,11 +122,12 @@ class CharactorMelTFDataset(AbstractDataset):
         items = {
             "utt_ids": utt_ids,
             "input_ids": input_ids,
-            "mel_gts": mel_gts,
-            "speaker_ids": speaker_ids,
-            'g_attentions': g_attentions,
-            'mel_lengths': mel_lengths,
             'input_lengths': input_lengths,
+            "speaker_ids": speaker_ids,
+            "mel_gts": mel_gts,
+            'mel_lengths': mel_lengths,
+            'real_mel_lengths': mel_lengths,
+            'g_attentions': g_attentions,
         }
         return items
 
@@ -143,23 +144,6 @@ class CharactorMelTFDataset(AbstractDataset):
 
         datasets = tf.data.TFRecordDataset(self.tfrecord_files, num_parallel_reads=tf.data.experimental.AUTOTUNE)
         datasets = datasets.map(self._parse_tfrecord, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-        # output_types = self.get_output_dtypes()
-        # datasets = tf.data.Dataset.from_generator(
-        #     self.generator, output_types=output_types, args=(self.get_args())
-        # )
-        #
-        # # load data
-        # datasets = datasets.map(
-        #     lambda items: self._load_data(items), tf.data.experimental.AUTOTUNE
-        # )
-        #
-        # # calculate guided attention
-        # if len(self.align_files) < 1:
-        #     datasets = datasets.map(
-        #         lambda items: self._guided_attention(items),
-        #         tf.data.experimental.AUTOTUNE,
-        #     )
 
         datasets = datasets.filter(
             lambda x: x["mel_lengths"] > self.mel_length_threshold
@@ -182,6 +166,7 @@ class CharactorMelTFDataset(AbstractDataset):
             "speaker_ids": 0,
             "mel_gts": self.mel_pad_value,
             "mel_lengths": 0,
+            "real_mel_lengths": 0,
             "g_attentions": self.ga_pad_value,
         }
 
@@ -197,6 +182,7 @@ class CharactorMelTFDataset(AbstractDataset):
             if self.use_fixed_shapes is False
             else [self.max_mel_length, 80],
             "mel_lengths": [],
+            "real_mel_lengths": [],
             "g_attentions": [None, None]
             if self.use_fixed_shapes is False
             else [self.max_char_length, self.max_mel_length // self.reduction_factor],
