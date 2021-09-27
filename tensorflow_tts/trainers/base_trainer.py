@@ -137,10 +137,6 @@ class BasedTrainer(metaclass=abc.ABCMeta):
         # update
         self.epochs += 1
         self.train_steps_per_epoch = train_steps_per_epoch
-        logging.info(
-            f"(Steps: {self.steps}) Finished {self.epochs} epoch training "
-            f"({self.train_steps_per_epoch} steps per epoch)."
-        )
 
     @abc.abstractmethod
     def _eval_epoch(self):
@@ -642,10 +638,6 @@ class GanBasedTrainer(BasedTrainer):
     def _check_log_interval(self):
         """Log to tensorboard."""
         if self.steps % self.config["log_interval_steps"] == 0:
-            for metric_name in self.list_metrics_name:
-                logging.info(
-                    f"(Step: {self.steps}) train_{metric_name} = {self.train_metrics[metric_name].result():.4f}."
-                )
             self._write_to_tensorboard(self.train_metrics, stage="train")
 
             # reset
@@ -875,7 +867,6 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
     @tf.function
     def _eval_epoch(self):
         """Evaluate model one epoch."""
-        logging.info(f"(Steps: {self.steps}) Start evaluation.")
 
         # calculate loss for each batch
         for eval_steps_per_epoch, batch in enumerate(
@@ -884,20 +875,9 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
             # eval one step
             self.one_step_evaluate(batch)
 
-            if eval_steps_per_epoch <= self.config["num_save_intermediate_results"]:
-                # save intermedia
-                self.generate_and_save_intermediate_result(batch)
-
-        logging.info(
-            f"(Steps: {self.steps}) Finished evaluation "
-            f"({eval_steps_per_epoch} steps per epoch)."
-        )
-
-        # average loss
-        for key in self.eval_metrics.keys():
-            logging.info(
-                f"(Steps: {self.steps}) eval_{key} = {self.eval_metrics[key].result():.4f}."
-            )
+            # if eval_steps_per_epoch <= self.config["num_save_intermediate_results"]:
+            #     # save intermedia
+            #     self.generate_and_save_intermediate_result(batch)
 
         # record
         self._write_to_tensorboard(self.eval_metrics, stage="eval")
