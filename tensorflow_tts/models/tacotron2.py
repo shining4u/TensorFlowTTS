@@ -808,6 +808,8 @@ class TFTacotron2(BaseModel):
         **kwargs,
     ):
         """Call logic."""
+        maximum_iterations = self.maximum_iterations if maximum_iterations is None else maximum_iterations
+        
         # create input-mask based on input_lengths
         input_mask = tf.sequence_mask(
             input_lengths,
