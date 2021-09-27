@@ -869,15 +869,9 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
         """Evaluate model one epoch."""
 
         # calculate loss for each batch
-        for eval_steps_per_epoch, batch in enumerate(
-            tqdm(self.eval_data_loader, desc="[eval]"), 1
-        ):
+        for batch in self.eval_data_loader:
             # eval one step
             self.one_step_evaluate(batch)
-
-            # if eval_steps_per_epoch <= self.config["num_save_intermediate_results"]:
-            #     # save intermedia
-            #     self.generate_and_save_intermediate_result(batch)
 
         # record
         self._write_to_tensorboard(self.eval_metrics, stage="eval")
