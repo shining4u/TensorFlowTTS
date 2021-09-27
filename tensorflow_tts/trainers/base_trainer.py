@@ -122,7 +122,9 @@ class BasedTrainer(metaclass=abc.ABCMeta):
 
     def _train_epoch(self):
         """Train model one epoch."""
-        for train_steps_per_epoch, batch in enumerate(self.train_data_loader, 1):
+        train_steps_per_epoch = 1
+        for batch in self.train_data_loader:
+        # for train_steps_per_epoch, batch in enumerate(self.train_data_loader, 1):
             # one step training
             self._train_step(batch)
 
@@ -134,6 +136,7 @@ class BasedTrainer(metaclass=abc.ABCMeta):
             # check wheter training is finished
             if self.finish_train:
                 return
+            train_steps_per_epoch += 1
 
         # update
         self.epochs += 1
