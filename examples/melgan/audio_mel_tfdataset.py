@@ -29,7 +29,7 @@ class AudioMelTFDataset(AbstractDataset):
     """Tensorflow Audio Mel dataset."""
 
     feature_description = {
-        "utt_ids": tf.io.FixedLenFeature([], tf.string),
+        "utt_ids": tf.io.FixedLenFeature([], tf.int64),
         "audios": tf.io.VarLenFeature(tf.float32),
         "mels": tf.io.VarLenFeature(tf.float32),
         'mel_lengths': tf.io.FixedLenFeature([], tf.int64),
@@ -76,7 +76,7 @@ class AudioMelTFDataset(AbstractDataset):
 
     def _parse_tfrecord(self, example_proto):
         parsed = tf.io.parse_single_example(example_proto, self.feature_description)
-        utt_ids = parsed['utt_ids']
+        utt_ids = tf.cast(parsed['utt_ids'], tf.int32)
         audios = tf.sparse.to_dense(parsed['audios'])
         mels = tf.sparse.to_dense(parsed['mels'])
         mels = tf.reshape(mels, (-1, 80))  # 80 is num_mel
@@ -143,7 +143,7 @@ class AudioMelTFDataset(AbstractDataset):
 
         # define padded values
         padding_values = {
-            "utt_ids": "",
+            "utt_ids": 0,
             "audios": 0.0,
             "mels": 0.0,
             "mel_lengths": 0,

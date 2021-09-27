@@ -31,7 +31,7 @@ class CharactorMelTFDataset(AbstractDataset):
     """Tensorflow Charactor Mel dataset."""
 
     feature_description = {
-        "utt_ids": tf.io.FixedLenFeature([], tf.string),
+        "utt_ids": tf.io.FixedLenFeature([], tf.int64),
         "input_ids": tf.io.VarLenFeature(tf.int64),
         "mel_gts": tf.io.VarLenFeature(tf.float32),
         "speaker_ids": tf.io.FixedLenFeature([], tf.int64, default_value=0),
@@ -78,6 +78,9 @@ class CharactorMelTFDataset(AbstractDataset):
         stats_files = tf.io.gfile.glob(os.path.join(root_dir, stats_query))
         assert len(self.tfrecord_files) != 0, f"Not found any stats files in ${root_dir}."
 
+        with tf.io.gfile.GFile(stats_files[0]) as f:
+            self.stats = yaml.load(f, Loader=yaml.Loader)
+
         self.reduction_factor = reduction_factor
         self.mel_length_threshold = mel_length_threshold
         self.mel_pad_value = mel_pad_value
@@ -86,12 +89,9 @@ class CharactorMelTFDataset(AbstractDataset):
         self.g = g
         self.use_fixed_shapes = use_fixed_shapes
 
-        with tf.io.gfile.GFile(stats_files[0]) as f:
-            stats = yaml.load(f, Loader=yaml.Loader)
-
-        self.len_dataset = stats['size']
-        self.max_char_length = stats['max_char_length']
-        self.max_mel_length = stats['max_mel_length']
+        self.len_dataset = self.stats['size']
+        self.max_char_length = self.stats['max_char_length']
+        self.max_mel_length = self.stats['max_mel_length']
 
         if self.max_mel_length % self.reduction_factor != 0:
             self.max_mel_length = (
@@ -108,7 +108,7 @@ class CharactorMelTFDataset(AbstractDataset):
 
     def _parse_tfrecord(self, example_proto):
         parsed = tf.io.parse_single_example(example_proto, self.feature_description)
-        utt_ids = parsed['utt_ids']
+        utt_ids = tf.cast(parsed['utt_ids'], tf.int32)
         input_ids = tf.sparse.to_dense(parsed['input_ids'])
         input_ids = tf.cast(input_ids, tf.int32)
         mel_gts = tf.sparse.to_dense(parsed['mel_gts'])
@@ -160,7 +160,7 @@ class CharactorMelTFDataset(AbstractDataset):
 
         # define padding value.
         padding_values = {
-            "utt_ids": " ",
+            "utt_ids": 0,
             "input_ids": self.char_pad_value,
             "input_lengths": 0,
             "speaker_ids": 0,
