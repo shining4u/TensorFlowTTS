@@ -809,7 +809,14 @@ class TFTacotron2(BaseModel):
     ):
         """Call logic."""
         maximum_iterations = self.maximum_iterations if maximum_iterations is None else maximum_iterations
-        
+
+        if not training:
+            tf.print(input_ids)
+            tf.print(input_lengths)
+            tf.print(speaker_ids)
+            tf.print(mel_gts)
+            tf.print(mel_lengths)
+
         # create input-mask based on input_lengths
         input_mask = tf.sequence_mask(
             input_lengths,
