@@ -908,22 +908,29 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
         os.makedirs(saved_path, exist_ok=True)
 
         self.saved_path = saved_path
-        self.ckpt = tf.train.Checkpoint(
-            steps=tf.Variable(1), epochs=tf.Variable(1), optimizer=self.get_optimizer()
+        self.ckp_manager = tf.train.Checkpoint(
+            optimizer=self._optimizer, model=self._model
         )
-        self.ckp_manager = tf.train.CheckpointManager(
-            self.ckpt, saved_path, max_to_keep=max_to_keep
-        )
+        self.save_ctr = 0
+        # self.ckpt = tf.train.Checkpoint(
+        #     steps=tf.Variable(1), epochs=tf.Variable(1), optimizer=self.get_optimizer()
+        # )
+        # self.ckp_manager = tf.train.CheckpointManager(
+        #     self.ckpt, saved_path, max_to_keep=max_to_keep
+        # )
 
     def save_checkpoint(self):
         """Save checkpoint."""
-        self.ckpt.steps.assign(self.steps)
-        self.ckpt.epochs.assign(self.epochs)
-        self.ckp_manager.save(checkpoint_number=self.steps)
-        utils.save_weights(
-            self._model,
-            self.saved_path + "model-{}.h5".format(self.steps)
-        )
+        save_p = self.saved_path + "check-{}".format(self.save_ctr)
+        self.ckp_manager.write(file_prefix=save_p)
+        self.save_ctr += 1
+        # self.ckpt.steps.assign(self.steps)
+        # self.ckpt.epochs.assign(self.epochs)
+        # self.ckp_manager.save(checkpoint_number=self.steps)
+        # utils.save_weights(
+        #     self._model,
+        #     self.saved_path + "model-{}.h5".format(self.steps)
+        # )
 
     def load_checkpoint(self, pretrained_path):
         """Load checkpoint."""
