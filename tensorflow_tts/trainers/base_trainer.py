@@ -95,6 +95,7 @@ class BasedTrainer(metaclass=abc.ABCMeta):
         """Create checkpoint management."""
         pass
 
+    @tf.function
     def run(self):
         """Run training."""
         self.tqdm = tqdm(
@@ -883,6 +884,7 @@ class Seq2SeqBasedTrainer(BasedTrainer, metaclass=abc.ABCMeta):
         dict_metrics_losses = {}
         return per_example_losses, dict_metrics_losses
 
+    @tf.function
     def _eval_epoch(self):
         """Evaluate model one epoch."""
         logging.info(f"(Steps: {self.steps}) Start evaluation.")
