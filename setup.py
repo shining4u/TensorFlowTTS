@@ -46,6 +46,7 @@ requirements = {
         # for jsut
         'mecab-python3',
         'jaconv',
+        'suji',
     ],
     "setup": ["numpy", "pytest-runner",],
     "test": [

@@ -19,6 +19,7 @@ import collections
 from tensorflow_tts.configs import BaseConfig
 from tensorflow_tts.processor.ljspeech import LJSPEECH_SYMBOLS as lj_symbols
 from tensorflow_tts.processor.kss import KSS_SYMBOLS as kss_symbols
+from tensorflow_tts.processor.jsut import JSUT_SYMBOLS as jsut_symbols
 from tensorflow_tts.processor.baker import BAKER_SYMBOLS as bk_symbols
 from tensorflow_tts.processor.libritts import LIBRITTS_SYMBOLS as lbri_symbols
 
@@ -91,6 +92,8 @@ class FastSpeechConfig(BaseConfig):
             self.vocab_size = vocab_size
         elif dataset == "kss":
             self.vocab_size = len(kss_symbols)
+        elif dataset == 'jsut':
+            self.vocab_size = len(jsut_symbols)
         elif dataset == "baker":
             self.vocab_size = len(bk_symbols)
         elif dataset == "libritts":
