@@ -22,6 +22,8 @@
 import re
 
 from tensorflow_tts.utils.korean import tokenize as ko_tokenize
+from tensorflow_tts.utils.japanese import normalize_to_katakana as ja_normalize
+from tensorflow_tts.utils.japanese import translate_to_symbols as ja_translator
 from tensorflow_tts.utils.number_norm import normalize_numbers
 from unidecode import unidecode
 from german_transliterate.core import GermanTransliterate
@@ -108,6 +110,13 @@ def korean_cleaners(text):
         text
     )  # '존경하는' --> ['ᄌ', 'ᅩ', 'ᆫ', 'ᄀ', 'ᅧ', 'ᆼ', 'ᄒ', 'ᅡ', 'ᄂ', 'ᅳ', 'ᆫ']
     return text
+
+
+def japanese_cleaners(text):
+    """Pipeline for japanese text, including number and abbreviation expansion."""
+    normalized_text = ja_normalize(text)
+    return ja_translator(normalized_text)
+
 
 def german_cleaners(text):
     """Pipeline for German text, including number and abbreviation expansion."""

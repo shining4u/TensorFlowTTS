@@ -16,8 +16,6 @@
 
 import os
 import re
-import MeCab
-import jaconv
 
 import numpy as np
 import soundfile as sf
@@ -35,7 +33,7 @@ _curly_re = re.compile(r"(.*?)\{(.+?)\}(.*)")
 class JSUTProcessor(BaseProcessor):
     """JSUT processor."""
 
-    cleaner_names: str = None
+    cleaner_names: str = "japanese_cleaners"
     positions = {
         "wave_file": 0,
         "text": 1,
@@ -70,14 +68,14 @@ class JSUTProcessor(BaseProcessor):
         text = parts[self.positions['text']]
         speaker_name = "jsut"
 
-        # test
-        cleaned_text = self.clean_text(text)
-        if not set(list(cleaned_text)).issubset(self.symbol_to_id):
-            # missing = set(list(cleaned_text)) - set(self.symbol_to_id.keys())
-            # missed = ''.join(missing)
-            # if not re.match(r'\d+', missed):
-            #     print(f'FAILED missing: {missing}, line: {text}, cleaned_text: {cleaned_text}')
-            return None
+        # # test
+        # cleaned_text = self.clean_text(text)
+        # if not set(list(cleaned_text)).issubset(self.symbol_to_id):
+        #     # missing = set(list(cleaned_text)) - set(self.symbol_to_id.keys())
+        #     # missed = ''.join(missing)
+        #     # if not re.match(r'\d+', missed):
+        #     #     print(f'FAILED missing: {missing}, line: {text}, cleaned_text: {cleaned_text}')
+        #     return None
 
         return text, wav_path, speaker_name
 
@@ -110,68 +108,38 @@ class JSUTProcessor(BaseProcessor):
         return sample
 
     def text_to_sequence(self, text):
-        text = self.clean_text(text)
-        return self._symbols_to_sequence(list(text)) + [self.eos_id]
-
-    def clean_text(self, text):
-        for c in [" ", "　", "「", "」", "『", "』", "・", "【", "】", "（", "）", "(", ")"]:
-            text = text.replace(c, "")
-        text = text.replace("!", "！")
-        text = text.replace("?", "？")
-
-        text = self.normalize_delimitor(text)
-        text = jaconv.normalize(text)
-        text = self.mix_pronunciation(text)
-        text = jaconv.hira2kata(text)
-        text = self.add_punctuation(text)
-        return text
-
-    #
-    def _yomi(self, mecab_result):
-        tokens = []
-        yomis = []
-        for line in mecab_result.split("\n")[:-1]:
-            s = line.split("\t")
-            if len(s) == 1:
+        sequence = []
+        # Check for curly braces and treat their contents as ARPAbet:
+        while len(text):
+            m = _curly_re.match(text)
+            if not m:
+                sequence += self._symbols_to_sequence(
+                    self._clean_text(text, [self.cleaner_names])
+                )
                 break
-            token, rest = s
-            rest = rest.split(",")
-            tokens.append(token)
-            yomi = rest[7] if len(rest) > 7 else None
-            yomi = None if yomi == "*" else yomi
-            yomis.append(yomi)
-        return tokens, yomis
+            sequence += self._symbols_to_sequence(
+                self._clean_text(m.group(1), [self.cleaner_names])
+            )
+            sequence += self._arpabet_to_sequence(m.group(2))
+            text = m.group(3)
 
-    def _mix_pronunciation(self, tokens, yomis):
-        return "".join(
-            yomis[idx] if yomis[idx] is not None else tokens[idx]
-            for idx in range(len(tokens)))
+        # add eos tokens
+        sequence += [self.eos_id]
+        return sequence
 
-    def mix_pronunciation(self, text):
-        if self._tagger is None:
-            # self._tagger = MeCab.Tagger("")
-            # 7166
-            self._tagger = MeCab.Tagger("-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd/")
-            # 7511
-        tokens, yomis = self._yomi(self._tagger.parse(text))
-        return self._mix_pronunciation(tokens, yomis)
-
-    def add_punctuation(self, text):
-        last = text[-1]
-        if last not in [".", ",", "、", "。", "！", "？", "!", "?"]:
-            text = text + "。"
+    def _clean_text(self, text, cleaner_names):
+        for name in cleaner_names:
+            cleaner = getattr(cleaners, name)
+            if not cleaner:
+                raise Exception("Unknown cleaner: %s" % name)
+            text = cleaner(text)
         return text
-
-    def normalize_delimitor(self, text):
-        text = text.replace(",", "、")
-        text = text.replace(".", "。")
-        text = text.replace("，", "、")
-        text = text.replace("．", "。")
-        return text
-    #
 
     def _symbols_to_sequence(self, symbols):
         return [self.symbol_to_id[s] for s in symbols if self._should_keep_symbol(s)]
 
+    def _arpabet_to_sequence(self, text):
+        return self._symbols_to_sequence(["@" + s for s in text.split()])
+
     def _should_keep_symbol(self, s):
-        return s in self.symbol_to_id
+        return s in self.symbol_to_id and s != "_" and s != "~"
