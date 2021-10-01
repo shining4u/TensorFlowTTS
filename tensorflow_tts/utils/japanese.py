@@ -25,16 +25,16 @@ _tagger = None
 _number_pattern = re.compile(r"([0-9１２３４５６７８９０]+)")
 _phone_pattern = re.compile(r"(\d{3,4}(ー|-)\d{3,4}((ー|-)\d{3,4})?)")
 _numbering_pattern = re.compile(r"([0-9１２３４５６７８９０]+)(号)")
-# _HOUR_PATTERN = re.compile(r"([0-9１２３４５６７８９０]+)時")
 
 _pad = "pad"
 _eos = "eos"
 
 _punctuations = [
-    "、", "。", "-", "ー", "?",
+    "、", "。", "?", "!"
 ]
 
 _specials = [
+    "-", "ー",
 ]
 
 _sym_leads = [
