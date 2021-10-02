@@ -369,26 +369,27 @@ def _get_tagger():
     return _tagger
 
 
-def _yomi(mecab_result):
+def _pronunciate(mecab_result):
     tokens = []
-    yomis = []
+    pronounces = []
     for line in mecab_result.split("\n")[:-1]:
+        # 表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
         s = line.split("\t")
         if len(s) == 1:
             break
         token, rest = s
         rest = rest.split(",")
         tokens.append(token)
-        yomi = rest[7] if len(rest) > 7 else None
-        yomi = None if yomi == "*" else yomi
-        yomis.append(yomi)
-    return tokens, yomis
+        pronounce = rest[8] if len(rest) > 8 else None
+        pronounce = None if pronounce == "*" else pronounce
+        pronounces.append(pronounce)
+    return tokens, pronounces
 
 
 def _mix_pronunciation(text):
-    tokens, yomis = _yomi(_get_tagger().parse(text))
+    tokens, pronounce = _pronunciate(_get_tagger().parse(text))
     return "".join(
-        yomis[idx] if yomis[idx] is not None else tokens[idx]
+        pronounce[idx] if pronounce[idx] is not None else tokens[idx]
         for idx in range(len(tokens)))
 
 
